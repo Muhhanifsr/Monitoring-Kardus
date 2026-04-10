@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Sistem Monitoring Stock Kardus - Dashboard real-time untuk pemantauan stok kardus, box, dan palet besi terintegrasi Google Spreadsheet">
+    <title>Stock Monitor — Monitoring Kardus & Palet</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/custom.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">\
+    <!-- <link rel="icon" type="image/x-icon" href="overview_ippi.png">-->
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <p class="mt-3 text-white fw-semibold">Memproses...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:9999;">
+        <div id="toastNotif" class="toast align-items-center border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">
+                <i class="fas fa-cubes"></i>
+            </div>
+            <h5 class="brand-name">Stock<span class="text-accent">Monitor</span></h5> <!--  masih perlu di revisi -->
+            <p class="brand-sub">Monitoring System</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-link-custom active" data-page="dashboard" id="nav-dashboard">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-link-custom" data-page="transaksi" id="nav-transaksi">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Transaksi</span>
+            </a>
+            <a href="#" class="nav-link-custom" data-page="riwayat" id="nav-riwayat">
+                <i class="fas fa-history"></i>
+                <span>Riwayat</span>
+            </a>
+            <a href="#" class="nav-link-custom" data-page="pengaturan" id="nav-pengaturan">
+                <i class="fas fa-cog"></i>
+                <span>Pengaturan</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sync-status" id="syncStatus">
+                <i class="fas fa-circle text-success"></i>
+                <span>Terhubung ke Spreadsheet</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-icon sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                    <p class="page-subtitle" id="pageSubtitle">Overview stock & monitoring real-time</p>
+                </div>
+            </div>
+            <div class="top-bar-actions">
+                <button class="btn btn-glass" id="btnRefresh" title="Refresh Data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <div class="datetime-display" id="datetimeDisplay"></div>
+            </div>
+        </header>
+
+        <!-- Page: Dashboard -->
+        <section class="page-content active" id="page-dashboard">
+            <!-- Stock Summary Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="stock-card card-kardus-besar">
+                        <div class="stock-card-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <div class="stock-card-body">
+                            <p class="stock-label">Kardus Besar</p>
+                            <h2 class="stock-value" id="stockKardusBesar">0</h2>
+                            <div class="stock-detail">
+                                <span class="badge badge-layak"><i class="fas fa-check-circle"></i> Layak: <span
+                                        id="layakKardusBesar">0</span></span>
+                                <span class="badge badge-tidak-layak"><i class="fas fa-times-circle"></i> Tidak: <span
+                                        id="tidakLayakKardusBesar">0</span></span>
+                            </div>
+                        </div>
+                        <div class="stock-card-glow"></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="stock-card card-kardus-kecil">
+                        <div class="stock-card-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stock-card-body">
+                            <p class="stock-label">Kardus Kecil</p>
+                            <h2 class="stock-value" id="stockKardusKecil">0</h2>
+                            <div class="stock-detail">
+                                <span class="badge badge-layak"><i class="fas fa-check-circle"></i> Layak: <span
+                                        id="layakKardusKecil">0</span></span>
+                                <span class="badge badge-tidak-layak"><i class="fas fa-times-circle"></i> Tidak: <span
+                                        id="tidakLayakKardusKecil">0</span></span>
+                            </div>
+                        </div>
+                        <div class="stock-card-glow"></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="stock-card card-box-besar">
+                        <div class="stock-card-icon">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        <div class="stock-card-body">
+                            <p class="stock-label">Box Besar</p>
+                            <h2 class="stock-value" id="stockBoxBesar">0</h2>
+                            <div class="stock-detail">
+                                <span class="badge badge-layak"><i class="fas fa-check-circle"></i> Layak: <span
+                                        id="layakBoxBesar">0</span></span>
+                                <span class="badge badge-tidak-layak"><i class="fas fa-times-circle"></i> Tidak: <span
+                                        id="tidakLayakBoxBesar">0</span></span>
+                            </div>
+                        </div>
+                        <div class="stock-card-glow"></div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="stock-card card-box-kecil">
+                        <div class="stock-card-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <div class="stock-card-body">
+                            <p class="stock-label">Box Kecil</p>
+                            <h2 class="stock-value" id="stockBoxKecil">0</h2>
+                            <div class="stock-detail">
+                                <span class="badge badge-layak"><i class="fas fa-check-circle"></i> Layak: <span
+                                        id="layakBoxKecil">0</span></span>
+                                <span class="badge badge-tidak-layak"><i class="fas fa-times-circle"></i> Tidak: <span
+                                        id="tidakLayakBoxKecil">0</span></span>
+                            </div>
+                        </div>
+                        <div class="stock-card-glow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Palet Section -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="section-header">
+                        <h3><i class="fas fa-pallet"></i> Palet Besi</h3>
+                        <p>Status palet berdasarkan tipe</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="palet-card palet-a1">
+                        <div class="palet-card-header">
+                            <div class="palet-icon-wrapper">
+                                <i class="fas fa-pallet"></i>
+                            </div>
+                            <div>
+                                <h4 class="palet-title">A1 ADM</h4>
+                                <p class="palet-type">Palet Besi — Tipe A1</p>
+                            </div>
+                        </div>
+                        <div class="palet-stats">
+                            <div class="palet-stat">
+                                <span class="palet-stat-label">Total</span>
+                                <span class="palet-stat-value" id="totalPaletA1">0</span>
+                            </div>
+                            <div class="palet-stat layak">
+                                <span class="palet-stat-label">Layak</span>
+                                <span class="palet-stat-value" id="layakPaletA1">0</span>
+                            </div>
+                            <div class="palet-stat tidak-layak">
+                                <span class="palet-stat-label">Tidak Layak</span>
+                                <span class="palet-stat-value" id="tidakLayakPaletA1">0</span>
+                            </div>
+                        </div>
+                        <div class="palet-bar">
+                            <div class="palet-bar-fill" id="barPaletA1" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="palet-card palet-3d">
+                        <div class="palet-card-header">
+                            <div class="palet-icon-wrapper">
+                                <i class="fas fa-pallet"></i>
+                            </div>
+                            <div>
+                                <h4 class="palet-title">3D FLOOR</h4>
+                                <p class="palet-type">Palet Besi — Tipe 3D</p>
+                            </div>
+                        </div>
+                        <div class="palet-stats">
+                            <div class="palet-stat">
+                                <span class="palet-stat-label">Total</span>
+                                <span class="palet-stat-value" id="totalPalet3D">0</span>
+                            </div>
+                            <div class="palet-stat layak">
+                                <span class="palet-stat-label">Layak</span>
+                                <span class="palet-stat-value" id="layakPalet3D">0</span>
+                            </div>
+                            <div class="palet-stat tidak-layak">
+                                <span class="palet-stat-label">Tidak Layak</span>
+                                <span class="palet-stat-value" id="tidakLayakPalet3D">0</span>
+                            </div>
+                        </div>
+                        <div class="palet-bar">
+                            <div class="palet-bar-fill" id="barPalet3D" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions Preview -->
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="glass-card">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-clock"></i> Transaksi Terakhir</h4>
+                            <a href="#" class="btn btn-sm btn-outline-accent" id="btnViewAllHistory">Lihat Semua <i
+                                    class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom" id="recentTransactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Waktu</th>
+                                        <th>Item</th>
+                                        <th>Tipe</th>
+                                        <th>Jumlah</th>
+                                        <th>Kondisi</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactionsBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                            Belum ada transaksi
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page: Transaksi -->
+        <section class="page-content" id="page-transaksi">
+            <div class="row g-4">
+                <!-- Form Tambah Stock -->
+                <div class="col-lg-6">
+                    <div class="glass-card">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-plus-circle text-success"></i> Tambah Stock</h4>
+                        </div>
+                        <form id="formTambahStock" class="transaction-form">
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="tambahItem">Pilih Item</label>
+                                <select class="form-select-custom" id="tambahItem" required>
+                                    <option value="">— Pilih Item —</option>
+                                    <option value="Kardus Besar">Kardus Besar</option>
+                                    <option value="Kardus Kecil">Kardus Kecil</option>
+                                    <option value="Box Besar">Box Besar</option>
+                                    <option value="Box Kecil">Box Kecil</option>
+                                    <option value="Palet A1 ADM">Palet Besi — A1 ADM</option>
+                                    <option value="Palet 3D FLOOR">Palet Besi — 3D FLOOR</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="tambahJumlah">Jumlah</label>
+                                <input type="number" class="form-control-custom" id="tambahJumlah" min="1"
+                                    placeholder="Masukkan jumlah" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="tambahKondisi">Kondisi</label>
+                                <select class="form-select-custom" id="tambahKondisi" required>
+                                    <option value="">— Pilih Kondisi —</option>
+                                    <option value="Layak">✅ Layak</option>
+                                    <option value="Tidak Layak">❌ Tidak Layak</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="tambahKeterangan">Keterangan</label>
+                                <textarea class="form-control-custom" id="tambahKeterangan" rows="2"
+                                    placeholder="Opsional..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient-success w-100" id="btnSubmitTambah">
+                                <i class="fas fa-plus-circle me-2"></i>Tambah Stock
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Form Kurangi Stock -->
+                <div class="col-lg-6">
+                    <div class="glass-card">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-minus-circle text-danger"></i> Kurangi Stock</h4>
+                        </div>
+                        <form id="formKurangiStock" class="transaction-form">
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="kurangiItem">Pilih Item</label>
+                                <select class="form-select-custom" id="kurangiItem" required>
+                                    <option value="">— Pilih Item —</option>
+                                    <option value="Kardus Besar">Kardus Besar</option>
+                                    <option value="Kardus Kecil">Kardus Kecil</option>
+                                    <option value="Box Besar">Box Besar</option>
+                                    <option value="Box Kecil">Box Kecil</option>
+                                    <option value="Palet A1 ADM">Palet Besi — A1 ADM</option>
+                                    <option value="Palet 3D FLOOR">Palet Besi — 3D FLOOR</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="kurangiJumlah">Jumlah</label>
+                                <input type="number" class="form-control-custom" id="kurangiJumlah" min="1"
+                                    placeholder="Masukkan jumlah" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="kurangiKondisi">Kondisi</label>
+                                <select class="form-select-custom" id="kurangiKondisi" required>
+                                    <option value="">— Pilih Kondisi —</option>
+                                    <option value="Layak">✅ Layak</option>
+                                    <option value="Tidak Layak">❌ Tidak Layak</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="kurangiKeterangan">Keterangan</label>
+                                <textarea class="form-control-custom" id="kurangiKeterangan" rows="2"
+                                    placeholder="Opsional..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient-danger w-100" id="btnSubmitKurangi">
+                                <i class="fas fa-minus-circle me-2"></i>Kurangi Stock
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page: Riwayat -->
+        <section class="page-content" id="page-riwayat">
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <h4><i class="fas fa-history"></i> Riwayat Transaksi</h4>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <select class="form-select-custom form-select-sm" id="filterItem" style="width:auto;">
+                            <option value="">Semua Item</option>
+                            <option value="Kardus Besar">Kardus Besar</option>
+                            <option value="Kardus Kecil">Kardus Kecil</option>
+                            <option value="Box Besar">Box Besar</option>
+                            <option value="Box Kecil">Box Kecil</option>
+                            <option value="Palet A1 ADM">Palet A1 ADM</option>
+                            <option value="Palet 3D FLOOR">Palet 3D FLOOR</option>
+                        </select>
+                        <select class="form-select-custom form-select-sm" id="filterTipe" style="width:auto;">
+                            <option value="">Semua Tipe</option>
+                            <option value="Masuk">Masuk</option>
+                            <option value="Keluar">Keluar</option>
+                        </select>
+                        <button class="btn btn-sm btn-glass" id="btnExportHistory" title="Export CSV">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal & Waktu</th>
+                                <th>Item</th>
+                                <th>Tipe</th>
+                                <th>Jumlah</th>
+                                <th>Kondisi</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block opacity-50"></i>
+                                    Belum ada riwayat transaksi
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page: Pengaturan -->
+        <section class="page-content" id="page-pengaturan">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="glass-card">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-link"></i> Integrasi Google Spreadsheet</h4>
+                        </div>
+                        <div class="setting-section">
+                            <p class="text-muted mb-3">Masukkan URL Web App dari Google Apps Script yang terhubung ke
+                                Spreadsheet Anda.</p>
+                            <div class="mb-3">
+                                <label class="form-label-custom" for="inputWebAppUrl">URL Web App (Google Apps
+                                    Script)</label>
+                                <input type="url" class="form-control-custom" id="inputWebAppUrl"
+                                    placeholder="https://script.google.com/macros/s/xxxxx/exec">
+                            </div>
+                            <button class="btn btn-gradient-primary" id="btnSaveUrl">
+                                <i class="fas fa-save me-2"></i>Simpan & Hubungkan
+                            </button>
+                            <div class="mt-3" id="connectionStatus"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="glass-card">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-info-circle"></i> Panduan Setup</h4>
+                        </div>
+                        <div class="guide-steps">
+                            <div class="guide-step">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h6>Buat Google Spreadsheet</h6>
+                                    <p>Buat spreadsheet baru dengan 2 sheet: <strong>"Stock"</strong> dan
+                                        <strong>"Riwayat"</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h6>Setup Apps Script</h6>
+                                    <p>Buka Extensions → Apps Script, lalu tempel kode yang tersedia</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h6>Deploy Web App</h6>
+                                    <p>Deploy sebagai Web App dan salin URL-nya</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h6>Tempel URL</h6>
+                                    <p>Paste URL ke kolom di sebelah kiri dan simpan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card mt-4">
+                        <div class="glass-card-header">
+                            <h4><i class="fas fa-code"></i> Kode Apps Script</h4>
+                        </div>
+                        <button class="btn btn-glass w-100 mb-2" id="btnCopyScript">
+                            <i class="fas fa-copy me-2"></i>Salin Kode Apps Script
+                        </button>
+                        <p class="text-muted small">Klik untuk menyalin kode Google Apps Script yang diperlukan</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Apps Script Code -->
+    <div class="modal fade" id="modalScript" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content modal-custom">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-code me-2"></i>Google Apps Script Code</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Salin kode ini ke Google Apps Script pada Spreadsheet Anda:</p>
+                    <pre class="code-block" id="appsScriptCode"></pre>
+                    <button class="btn btn-gradient-primary mt-3" id="btnCopyCode">
+                        <i class="fas fa-copy me-2"></i>Salin Kode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+
+</html>

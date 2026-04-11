@@ -397,7 +397,7 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">
                 <i class="fas fa-inbox fa-3x mb-3 d-block opacity-50"></i>
                 ${transactionHistory.length === 0 ? 'Belum ada riwayat transaksi' : 'Tidak ada transaksi yang cocok dengan filter'}</td></tr>`;
             return;
@@ -412,8 +412,21 @@
                 <td class="${t.type === 'Masuk' ? 'jumlah-masuk' : 'jumlah-keluar'}">${t.type === 'Masuk' ? '+' : '-'}${t.jumlah}</td>
                 <td><span class="kondisi-badge ${t.kondisi === 'Layak' ? 'layak' : 'tidak-layak'}">${t.kondisi}</span></td>
                 <td class="text-muted">${escapeHtml(t.keterangan)}</td>
+                <td>
+                    <button class="btn-delete-row" data-id="${t.id}" title="Hapus transaksi ini">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
+
+        // Attach per-row delete handlers
+        tbody.querySelectorAll('.btn-delete-row').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                showDeleteConfirmation('single', id);
+            });
+        });
     }
 
     // ============================================
@@ -714,6 +727,18 @@ function getStockData() {
         if (btnExport) {
             btnExport.addEventListener('click', exportCSV);
         }
+
+        // Delete All History
+        const btnDeleteAll = $('#btnDeleteAllHistory');
+        if (btnDeleteAll) {
+            btnDeleteAll.addEventListener('click', () => {
+                if (transactionHistory.length === 0) {
+                    showToast('Tidak ada riwayat untuk dihapus', 'error');
+                    return;
+                }
+                showDeleteConfirmation('all');
+            });
+        }
     }
 
     // ============================================
@@ -750,6 +775,72 @@ function getStockData() {
         URL.revokeObjectURL(url);
 
         showToast('File CSV berhasil di-download!', 'success');
+    }
+
+    // ============================================
+    // Delete Transactions
+    // ============================================
+    let pendingDeleteMode = null; // 'single' or 'all'
+    let pendingDeleteId = null;
+
+    function showDeleteConfirmation(mode, id) {
+        pendingDeleteMode = mode;
+        pendingDeleteId = id || null;
+
+        const textEl = $('#deleteConfirmText');
+        if (mode === 'all') {
+            textEl.innerHTML = `Apakah Anda yakin ingin menghapus <strong>semua ${transactionHistory.length} riwayat</strong> transaksi?`;
+        } else {
+            const t = transactionHistory.find(tr => tr.id === id);
+            if (t) {
+                textEl.innerHTML = `Hapus transaksi <strong>${escapeHtml(t.item)}</strong> (${t.type}, ${t.jumlah} unit) pada <strong>${formatDate(t.timestamp)}</strong>?`;
+            } else {
+                textEl.textContent = 'Hapus transaksi ini?';
+            }
+        }
+
+        const modal = new bootstrap.Modal($('#modalKonfirmasiHapus'));
+        modal.show();
+
+        // Re-bind confirm button (remove old listeners)
+        const btnConfirm = $('#btnConfirmDelete');
+        const newBtn = btnConfirm.cloneNode(true);
+        btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+        newBtn.id = 'btnConfirmDelete';
+
+        newBtn.addEventListener('click', () => {
+            if (pendingDeleteMode === 'all') {
+                deleteAllHistory();
+            } else if (pendingDeleteMode === 'single' && pendingDeleteId) {
+                deleteTransaction(pendingDeleteId);
+            }
+            modal.hide();
+        });
+    }
+
+    function deleteTransaction(id) {
+        const index = transactionHistory.findIndex(t => t.id === id);
+        if (index === -1) {
+            showToast('Transaksi tidak ditemukan', 'error');
+            return;
+        }
+
+        transactionHistory.splice(index, 1);
+        saveToLocalStorage();
+        updateDashboard();
+        renderRecentTransactions();
+        renderHistory();
+        showToast('Transaksi berhasil dihapus', 'success');
+    }
+
+    function deleteAllHistory() {
+        const count = transactionHistory.length;
+        transactionHistory = [];
+        saveToLocalStorage();
+        updateDashboard();
+        renderRecentTransactions();
+        renderHistory();
+        showToast(`${count} riwayat transaksi berhasil dihapus`, 'success');
     }
 
     // ============================================

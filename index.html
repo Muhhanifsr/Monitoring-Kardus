@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
         content="Sistem Monitoring Stock Kardus - Dashboard real-time untuk pemantauan stok kardus, box, dan palet besi terintegrasi Google Spreadsheet">
-    <title>Stock Monitor — Monitoring Kardus & Palet</title>
+    <title>Stock Monitoring Carton & Pallet</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/custom.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- <link rel="icon" type="image/x-icon" href="overview_ippi.png">-->
+    <<link rel="icon" type="image/x-icon" href="thumb_ippi-removebg-preview.png">
 </head>
 
 <body>
@@ -40,9 +40,10 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand-logo">
-                <i class="fas fa-cubes"></i>
+                <img src="PT.-Inti-Pantja-Press-Industri.webp" alt="Logo" style="width:50px;"> <!--ubah logo-->
             </div>
-            <h5 class="brand-name">Stock<span class="text-accent">Monitor</span></h5> <!--  masih perlu di revisi -->
+            <h5 class="brand-name">Stock <span class="text-accent">Carton & Pallet</span></h5>
+            <!--  masih perlu di revisi -->
             <p class="brand-sub">Monitoring System</p>
         </div>
         <nav class="sidebar-nav">
@@ -392,6 +393,10 @@
                         <button class="btn btn-sm btn-glass" id="btnExportHistory" title="Export CSV">
                             <i class="fas fa-download"></i> Export
                         </button>
+                        <button class="btn btn-sm btn-glass btn-delete-all" id="btnDeleteAllHistory"
+                            title="Hapus Semua Riwayat">
+                            <i class="fas fa-trash-alt"></i> Hapus Semua
+                        </button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -405,11 +410,12 @@
                                 <th>Jumlah</th>
                                 <th>Kondisi</th>
                                 <th>Keterangan</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="historyBody">
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">
+                                <td colspan="8" class="text-center text-muted py-5">
                                     <i class="fas fa-inbox fa-3x mb-3 d-block opacity-50"></i>
                                     Belum ada riwayat transaksi
                                 </td>
@@ -510,6 +516,34 @@
                     <pre class="code-block" id="appsScriptCode"></pre>
                     <button class="btn btn-gradient-primary mt-3" id="btnCopyCode">
                         <i class="fas fa-copy me-2"></i>Salin Kode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Konfirmasi Hapus -->
+    <div class="modal fade" id="modalKonfirmasiHapus" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-custom modal-delete">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Konfirmasi
+                        Hapus</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="delete-confirm-text" id="deleteConfirmText">Apakah Anda yakin ingin menghapus semua
+                        riwayat transaksi?</p>
+                    <div class="delete-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Tindakan ini tidak dapat dibatalkan. Data yang dihapus tidak bisa dikembalikan.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-gradient-danger" id="btnConfirmDelete">
+                        <i class="fas fa-trash-alt me-1"></i>Hapus
                     </button>
                 </div>
             </div>

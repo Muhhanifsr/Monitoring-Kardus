@@ -18,7 +18,7 @@
 
     const ITEMS = [
         'Kardus Besar', 'Kardus Kecil',
-        'Box Besar', 'Box Kecil',
+        'Layer Besar', 'Layer Kecil',
         'Palet A1 ADM', 'Palet 3D FLOOR'
     ];
 
@@ -192,8 +192,8 @@
         // Update stock cards
         updateStockCard('KardusBesar', 'Kardus Besar');
         updateStockCard('KardusKecil', 'Kardus Kecil');
-        updateStockCard('BoxBesar', 'Box Besar');
-        updateStockCard('BoxKecil', 'Box Kecil');
+        updateStockCard('LayerBesar', 'Layer Besar');
+        updateStockCard('LayerKecil', 'Layer Kecil');
 
         // Update palet cards
         updatePaletCard('PaletA1', 'Palet A1 ADM');
@@ -375,7 +375,7 @@
                 <td><span class="type-badge ${t.type.toLowerCase()}">${t.type === 'Masuk' ? '↑ Masuk' : '↓ Keluar'}</span></td>
                 <td class="${t.type === 'Masuk' ? 'jumlah-masuk' : 'jumlah-keluar'}">${t.type === 'Masuk' ? '+' : '-'}${t.jumlah}</td>
                 <td><span class="kondisi-badge ${t.kondisi === 'Layak' ? 'layak' : 'tidak-layak'}">${t.kondisi}</span></td>
-                <td class="text-muted">${escapeHtml(t.keterangan)}</td>
+                <td class="text-light">${escapeHtml(t.keterangan)}</td>
             </tr>
         `).join('');
     }
@@ -411,7 +411,7 @@
                 <td><span class="type-badge ${t.type.toLowerCase()}">${t.type === 'Masuk' ? '↑ Masuk' : '↓ Keluar'}</span></td>
                 <td class="${t.type === 'Masuk' ? 'jumlah-masuk' : 'jumlah-keluar'}">${t.type === 'Masuk' ? '+' : '-'}${t.jumlah}</td>
                 <td><span class="kondisi-badge ${t.kondisi === 'Layak' ? 'layak' : 'tidak-layak'}">${t.kondisi}</span></td>
-                <td class="text-muted">${escapeHtml(t.keterangan)}</td>
+                <td class="text-light">${escapeHtml(t.keterangan)}</td>
                 <td>
                     <button class="btn-delete-row" data-id="${t.id}" title="Hapus transaksi ini">
                         <i class="fas fa-trash-alt"></i>

@@ -29,8 +29,8 @@
     /* Card Gradients */
     --gradient-kardus-besar: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08));
     --gradient-kardus-kecil: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(16, 185, 129, 0.08));
-    --gradient-box-besar: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(245, 158, 11, 0.08));
-    --gradient-box-kecil: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(239, 68, 68, 0.08));
+    --gradient-layer-besar: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(245, 158, 11, 0.08));
+    --gradient-layer-kecil: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(239, 68, 68, 0.08));
 
     /* Text */
     --text-primary: #f1f5f9;
@@ -446,39 +446,39 @@ body::before {
     border-color: rgba(6, 182, 212, 0.3);
 }
 
-.card-box-besar {
-    background: var(--gradient-box-besar);
+.card-layer-besar {
+    background: var(--gradient-layer-besar);
     border-color: rgba(249, 115, 22, 0.15);
 }
 
-.card-box-besar .stock-card-icon {
+.card-layer-besar .stock-card-icon {
     background: rgba(249, 115, 22, 0.15);
     color: var(--accent-orange);
 }
 
-.card-box-besar .stock-card-glow {
+.card-layer-besar .stock-card-glow {
     background: var(--accent-orange);
 }
 
-.card-box-besar:hover {
+.card-layer-besar:hover {
     border-color: rgba(249, 115, 22, 0.3);
 }
 
-.card-box-kecil {
-    background: var(--gradient-box-kecil);
+.card-layer-kecil {
+    background: var(--gradient-layer-kecil);
     border-color: rgba(236, 72, 153, 0.15);
 }
 
-.card-box-kecil .stock-card-icon {
+.card-layer-kecil .stock-card-icon {
     background: rgba(236, 72, 153, 0.15);
     color: var(--accent-pink);
 }
 
-.card-box-kecil .stock-card-glow {
+.card-layer-kecil .stock-card-glow {
     background: var(--accent-pink);
 }
 
-.card-box-kecil:hover {
+.card-layer-kecil:hover {
     border-color: rgba(236, 72, 153, 0.3);
 }
 
@@ -500,7 +500,7 @@ body::before {
 .stock-detail {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .badge {

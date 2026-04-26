@@ -14,6 +14,8 @@
         STORAGE_KEY_URL: 'stockmonitor_webapp_url',
         STORAGE_KEY_STOCK: 'stockmonitor_stock_data',
         STORAGE_KEY_HISTORY: 'stockmonitor_history',
+        STORAGE_KEY_WEEKLY: 'stockmonitor_weekly_stock',
+        STORAGE_KEY_THEME: 'stockmonitor_theme',
     };
 
     const ITEMS = [
@@ -33,6 +35,7 @@
 
     let stockData = getDefaultStock();
     let transactionHistory = [];
+    let weeklyData = [];
     let webAppUrl = '';
 
     // ============================================
@@ -50,6 +53,7 @@
         setupForms();
         setupSettings();
         setupMisc();
+        setupThemeToggle();
         updateDashboard();
         renderRecentTransactions();
         renderHistory();
@@ -78,6 +82,22 @@
                 transactionHistory = JSON.parse(savedHistory);
             }
 
+            const savedWeekly = localStorage.getItem(CONFIG.STORAGE_KEY_WEEKLY);
+            if (savedWeekly) {
+                weeklyData = JSON.parse(savedWeekly);
+            }
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem(CONFIG.STORAGE_KEY_THEME);
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                const icon = $('#themeIcon');
+                if (icon) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                }
+            }
+
             webAppUrl = localStorage.getItem(CONFIG.STORAGE_KEY_URL) || '';
             if (webAppUrl) {
                 const urlInput = $('#inputWebAppUrl');
@@ -95,6 +115,7 @@
         try {
             localStorage.setItem(CONFIG.STORAGE_KEY_STOCK, JSON.stringify(stockData));
             localStorage.setItem(CONFIG.STORAGE_KEY_HISTORY, JSON.stringify(transactionHistory));
+            localStorage.setItem(CONFIG.STORAGE_KEY_WEEKLY, JSON.stringify(weeklyData));
         } catch (e) {
             console.error('Error saving to localStorage:', e);
         }
@@ -132,6 +153,7 @@
                     dashboard: { title: 'Dashboard', sub: 'Overview stock & monitoring real-time' },
                     transaksi: { title: 'Transaksi', sub: 'Tambah atau kurangi stock' },
                     riwayat: { title: 'Riwayat Transaksi', sub: 'Log seluruh transaksi masuk & keluar' },
+                    stockmingguan: { title: 'Stock Mingguan', sub: 'Snapshot sisa stock per minggu' },
                     pengaturan: { title: 'Pengaturan', sub: 'Konfigurasi integrasi Spreadsheet' },
                 };
                 if (titles[page]) {
@@ -148,6 +170,8 @@
                     renderRecentTransactions();
                 } else if (page === 'riwayat') {
                     renderHistory();
+                } else if (page === 'stockmingguan') {
+                    renderWeeklyStock();
                 }
             });
         });
@@ -560,14 +584,15 @@
 
     function getAppsScriptCode() {
         return `// =============================================
-// StockMonitor Pro — Google Apps Script
+// StockMonitor Pro — Google Apps Script (with Weekly Stock)
 // Tempel kode ini di Extensions > Apps Script
 // pada Google Spreadsheet Anda
 // =============================================
 
-// Pastikan spreadsheet memiliki 2 sheet:
+// Pastikan spreadsheet memiliki 3 sheet:
 // Sheet 1: "Stock" (untuk data stock)
 // Sheet 2: "Riwayat" (untuk log transaksi)
+// Sheet 3: "StockMingguan" (untuk snapshot stock per minggu)
 
 function doGet(e) {
   var action = e.parameter.action;
@@ -587,6 +612,10 @@ function doPost(e) {
     
     if (payload.action === 'addTransaction') {
       return addTransaction(payload.data);
+    }
+    
+    if (payload.action === 'addWeeklyStock') {
+      return addWeeklyStock(payload.data);
     }
     
     return ContentService
@@ -651,6 +680,56 @@ function updateStockSheet(stockJson) {
   stockSheet.autoResizeColumns(1, 4);
 }
 
+function addWeeklyStock(rows) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('StockMingguan');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('StockMingguan');
+    sheet.appendRow(['Tanggal Catat', 'Tahun', 'Bulan', 'Minggu ke', 'Periode', 'Item', 'Layak', 'Tidak Layak', 'Total']);
+    sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  
+  // Hapus baris lama dengan periode yang sama (overwrite)
+  if (rows.length > 0) {
+    var firstRow = rows[0];
+    var lastDataRow = sheet.getLastRow();
+    if (lastDataRow > 1) {
+      var existingData = sheet.getRange(2, 1, lastDataRow - 1, 4).getValues();
+      var rowsToDelete = [];
+      for (var i = existingData.length - 1; i >= 0; i--) {
+        if (existingData[i][1] == firstRow.year &&
+            existingData[i][2] == firstRow.month &&
+            existingData[i][3] == firstRow.week) {
+          rowsToDelete.push(i + 2); // +2 karena header + 0-indexed
+        }
+      }
+      rowsToDelete.forEach(function(r) { sheet.deleteRow(r); });
+    }
+  }
+  
+  rows.forEach(function(row) {
+    sheet.appendRow([
+      new Date(row.recordedAt),
+      row.year,
+      row.month,
+      row.week,
+      row.label,
+      row.item,
+      row.layak,
+      row.tidakLayak,
+      row.total
+    ]);
+  });
+  
+  sheet.autoResizeColumns(1, 9);
+  
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'success' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function getStockData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var result = { stock: {}, history: [] };
@@ -692,6 +771,255 @@ function getStockData() {
     }
 
     // ============================================
+    // Weekly Stock Snapshot
+    // ============================================
+
+    const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+    /**
+     * Menghitung minggu ke-berapa dalam bulan (1–5)
+     * Minggu 1 = tgl 1–7, Minggu 2 = tgl 8–14, dst.
+     */
+    function getWeekOfMonth(date) {
+        return Math.ceil(date.getDate() / 7);
+    }
+
+    /** Rentang tanggal minggu ini (mis: "1 Apr – 7 Apr 2026") */
+    function getWeekDateRange(date) {
+        const week = getWeekOfMonth(date);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const startDay = (week - 1) * 7 + 1;
+        const endDay = Math.min(week * 7, new Date(year, month + 1, 0).getDate());
+        return `${startDay} ${MONTHS_SHORT[month]} – ${endDay} ${MONTHS_SHORT[month]} ${year}`;
+    }
+
+    /** Label periode: "Minggu 1 - Apr 2026" */
+    function getWeekLabel(date) {
+        const week = getWeekOfMonth(date);
+        return `Minggu ${week} - ${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+    }
+
+    /** Update info hero card (periode saat ini) */
+    function updateWeeklyHero() {
+        const now = new Date();
+        const labelEl = $('#currentWeekLabel');
+        const rangeEl = $('#currentWeekDateRange');
+        const snapshotCountEl = $('#totalWeeklySnapshots');
+        if (labelEl) labelEl.textContent = getWeekLabel(now);
+        if (rangeEl) rangeEl.textContent = getWeekDateRange(now);
+        if (snapshotCountEl) snapshotCountEl.textContent = weeklyData.length;
+    }
+
+    /** Simpan snapshot stock minggu ini */
+    function saveWeeklySnapshot() {
+        const now = new Date();
+        const week = getWeekOfMonth(now);
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-indexed
+        const label = getWeekLabel(now);
+
+        // Cek apakah sudah ada snapshot minggu + bulan + tahun yang sama
+        const existingIdx = weeklyData.findIndex(
+            s => s.week === week && s.month === month && s.year === year
+        );
+
+        const snapshot = {
+            id: Date.now(),
+            year,
+            month,
+            week,
+            label,
+            dateRange: getWeekDateRange(now),
+            recordedAt: now.toISOString(),
+            stock: JSON.parse(JSON.stringify(stockData)) // deep copy
+        };
+
+        if (existingIdx !== -1) {
+            // Overwrite snapshot yang sudah ada
+            weeklyData[existingIdx] = snapshot;
+            showToast(`Snapshot ${label} diperbarui!`, 'success');
+        } else {
+            weeklyData.unshift(snapshot);
+            showToast(`Snapshot ${label} berhasil dicatat!`, 'success');
+        }
+
+        saveToLocalStorage();
+        renderWeeklyStock();
+
+        // Kirim ke spreadsheet
+        sendWeeklyToSpreadsheet(snapshot);
+    }
+
+    /** Kirim snapshot mingguan ke Google Spreadsheet */
+    function sendWeeklyToSpreadsheet(snapshot) {
+        if (!webAppUrl) return;
+        const rows = [];
+        ITEMS.forEach(item => {
+            const s = snapshot.stock[item] || { layak: 0, tidakLayak: 0 };
+            rows.push({
+                recordedAt: snapshot.recordedAt,
+                year: snapshot.year,
+                month: snapshot.month,
+                week: snapshot.week,
+                label: snapshot.label,
+                item,
+                layak: s.layak,
+                tidakLayak: s.tidakLayak,
+                total: s.layak + s.tidakLayak
+            });
+        });
+
+        const payload = { action: 'addWeeklyStock', data: rows };
+        fetch(webAppUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(err => console.error('Weekly sync error:', err));
+    }
+
+    /** Populate filter tahun berdasarkan data yang ada */
+    function populateWeeklyYearFilter() {
+        const select = $('#filterWeeklyYear');
+        if (!select) return;
+        const years = [...new Set(weeklyData.map(s => s.year))].sort((a, b) => b - a);
+        // Simpan nilai terpilih
+        const current = select.value;
+        // Hapus semua kecuali opsi pertama (Semua Tahun)
+        while (select.options.length > 1) select.remove(1);
+        years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            select.appendChild(opt);
+        });
+        if (current) select.value = current;
+    }
+
+    /** Render summary cards (stock terkini per item) dan tabel riwayat */
+    function renderWeeklyStock() {
+        updateWeeklyHero();
+        populateWeeklyYearFilter();
+
+        const filterMonth = parseInt(($('#filterWeeklyMonth') || {}).value) || 0;
+        const filterYear = parseInt(($('#filterWeeklyYear') || {}).value) || 0;
+
+        let filtered = [...weeklyData];
+        if (filterMonth) filtered = filtered.filter(s => s.month === filterMonth);
+        if (filterYear) filtered = filtered.filter(s => s.year === filterYear);
+
+        // Render summary grid (latest snapshot per item dari filter)
+        const summaryGrid = $('#weeklySummaryGrid');
+        if (summaryGrid) {
+            if (filtered.length === 0) {
+                summaryGrid.innerHTML = '';
+            } else {
+                const latest = filtered[0]; // paling baru
+                summaryGrid.innerHTML = `
+                    <div class="weekly-summary-header">
+                        <i class="fas fa-info-circle"></i>
+                        Snapshot terbaru: <strong>${latest.label}</strong>
+                        <span class="text-muted ms-2">dicatat ${formatDate(latest.recordedAt)}</span>
+                    </div>
+                    <div class="weekly-item-grid">
+                        ${ITEMS.map(item => {
+                            const s = latest.stock[item] || { layak: 0, tidakLayak: 0 };
+                            const total = s.layak + s.tidakLayak;
+                            const pct = total > 0 ? Math.round((s.layak / total) * 100) : 0;
+                            return `
+                            <div class="weekly-item-card">
+                                <div class="weekly-item-name">${item}</div>
+                                <div class="weekly-item-total">${total}</div>
+                                <div class="weekly-item-detail">
+                                    <span class="wi-layak"><i class="fas fa-check-circle"></i> ${s.layak}</span>
+                                    <span class="wi-tidak"><i class="fas fa-times-circle"></i> ${s.tidakLayak}</span>
+                                </div>
+                                <div class="weekly-item-bar">
+                                    <div class="weekly-item-bar-fill" style="width:${pct}%"></div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>`;
+            }
+        }
+
+        // Render tabel
+        const tbody = $('#weeklyTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+                <i class="fas fa-calendar-times fa-3x mb-3 d-block opacity-50"></i>
+                ${weeklyData.length === 0
+                    ? 'Belum ada snapshot. Klik "Catat Stock Minggu Ini" untuk mulai.'
+                    : 'Tidak ada data untuk filter yang dipilih.'}
+            </td></tr>`;
+            return;
+        }
+
+        const rows = [];
+        filtered.forEach(snapshot => {
+            ITEMS.forEach(item => {
+                const s = snapshot.stock[item] || { layak: 0, tidakLayak: 0 };
+                const total = s.layak + s.tidakLayak;
+                rows.push(`
+                    <tr>
+                        <td>
+                            <span class="week-period-label">${MONTHS_ID[snapshot.month - 1]} ${snapshot.year}</span>
+                        </td>
+                        <td>
+                            <span class="week-badge week-badge-${snapshot.week}">Minggu ${snapshot.week}</span>
+                        </td>
+                        <td><strong class="text-light">${item}</strong></td>
+                        <td class="jumlah-masuk">${s.layak}</td>
+                        <td class="jumlah-keluar">${s.tidakLayak}</td>
+                        <td><strong>${total}</strong></td>
+                        <td class="text-muted" style="font-size:12px;">${formatDate(snapshot.recordedAt)}</td>
+                    </tr>`);
+            });
+        });
+        tbody.innerHTML = rows.join('');
+    }
+
+    /** Export CSV weekly */
+    function exportWeeklyCSV() {
+        if (weeklyData.length === 0) {
+            showToast('Tidak ada data untuk di-export', 'error');
+            return;
+        }
+        const headers = ['Periode', 'Tahun', 'Bulan', 'Minggu ke', 'Item', 'Layak', 'Tidak Layak', 'Total', 'Dicatat'];
+        const rows = [];
+        weeklyData.forEach(snapshot => {
+            ITEMS.forEach(item => {
+                const s = snapshot.stock[item] || { layak: 0, tidakLayak: 0 };
+                rows.push([
+                    snapshot.label,
+                    snapshot.year,
+                    MONTHS_ID[snapshot.month - 1],
+                    snapshot.week,
+                    item,
+                    s.layak,
+                    s.tidakLayak,
+                    s.layak + s.tidakLayak,
+                    formatDate(snapshot.recordedAt)
+                ]);
+            });
+        });
+        let csv = headers.join(',') + '\n';
+        rows.forEach(row => { csv += row.map(c => `"${c}"`).join(',') + '\n'; });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `stock_mingguan_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('File CSV Stock Mingguan berhasil di-download!', 'success');
+    }
+
+    // ============================================
     // Misc Setup
     // ============================================
     function setupMisc() {
@@ -722,7 +1050,7 @@ function getStockData() {
         if (filterItem) filterItem.addEventListener('change', renderHistory);
         if (filterTipe) filterTipe.addEventListener('change', renderHistory);
 
-        // Export CSV
+        // Export CSV Riwayat
         const btnExport = $('#btnExportHistory');
         if (btnExport) {
             btnExport.addEventListener('click', exportCSV);
@@ -739,6 +1067,64 @@ function getStockData() {
                 showDeleteConfirmation('all');
             });
         }
+
+        // === Weekly Stock ===
+        const btnSaveWeekly = $('#btnSaveWeeklySnapshot');
+        if (btnSaveWeekly) {
+            btnSaveWeekly.addEventListener('click', () => {
+                saveWeeklySnapshot();
+            });
+        }
+
+        const filterWeeklyMonth = $('#filterWeeklyMonth');
+        const filterWeeklyYear = $('#filterWeeklyYear');
+        if (filterWeeklyMonth) filterWeeklyMonth.addEventListener('change', renderWeeklyStock);
+        if (filterWeeklyYear) filterWeeklyYear.addEventListener('change', renderWeeklyStock);
+
+        const btnExportWeekly = $('#btnExportWeekly');
+        if (btnExportWeekly) btnExportWeekly.addEventListener('click', exportWeeklyCSV);
+    }
+
+    // ============================================
+    // Theme Toggle
+    // ============================================
+    function setupThemeToggle() {
+        const btn = $('#btnThemeToggle');
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+            const html = document.documentElement;
+            const isLight = html.getAttribute('data-theme') === 'light';
+            const icon = $('#themeIcon');
+
+            if (isLight) {
+                // Switch to dark
+                html.removeAttribute('data-theme');
+                localStorage.setItem(CONFIG.STORAGE_KEY_THEME, 'dark');
+                if (icon) {
+                    icon.style.transform = 'rotate(-180deg) scale(0)';
+                    setTimeout(() => {
+                        icon.classList.remove('fa-sun');
+                        icon.classList.add('fa-moon');
+                        icon.style.transform = 'rotate(0deg) scale(1)';
+                    }, 200);
+                }
+                showToast('Tema gelap diaktifkan 🌙', 'success');
+            } else {
+                // Switch to light
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem(CONFIG.STORAGE_KEY_THEME, 'light');
+                if (icon) {
+                    icon.style.transform = 'rotate(180deg) scale(0)';
+                    setTimeout(() => {
+                        icon.classList.remove('fa-moon');
+                        icon.classList.add('fa-sun');
+                        icon.style.transform = 'rotate(0deg) scale(1)';
+                    }, 200);
+                }
+                showToast('Tema terang diaktifkan ☀️', 'success');
+            }
+        });
     }
 
     // ============================================

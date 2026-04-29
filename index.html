@@ -3,10 +3,38 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description"
         content="Sistem Monitoring Stock Kardus - Dashboard real-time untuk pemantauan stok kardus, box, dan palet besi terintegrasi Google Spreadsheet">
-    <title>Stock Monitoring Carton & Pallet</title>
+
+    <!-- PWA: Theme Color -->
+    <meta name="theme-color" content="#6366f1">
+
+    <!-- PWA: Manifest -->
+    <link rel="manifest" href="/Monitoring-Kardus/manifest.json">
+
+    <!-- PWA: iOS Safari installable -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StockMonitor">
+    <link rel="apple-touch-icon" href="/Monitoring-Kardus/icons/apple-touch-icon.png">
+
+    <!-- PWA: Android / General -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="StockMonitor">
+
+    <!-- PWA: Microsoft -->
+    <meta name="msapplication-TileColor" content="#6366f1">
+    <meta name="msapplication-TileImage" content="/Monitoring-Kardus/icons/icon-192.png">
+
+    <title>Stock Monitoring Carton &amp; Pallet</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/Monitoring-Kardus/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/Monitoring-Kardus/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/Monitoring-Kardus/icons/icon-512.png">
+    <link rel="shortcut icon" href="/Monitoring-Kardus/icons/favicon-32.png">
+
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/custom.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +42,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <<link rel="icon" type="image/x-icon" href="thumb_ippi-removebg-preview.png">
 </head>
 
 <body>
@@ -651,6 +678,19 @@
 
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    await navigator.serviceWorker.register('/Monitoring-Kardus/service-worker.js', {
+                        scope: '/Monitoring-Kardus/'
+                    });
+                } catch (error) {
+                    console.error('[PWA] Service Worker registration failed:', error);
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -778,21 +778,35 @@ function getStockData() {
     const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
     /**
-     * Menghitung minggu ke-berapa dalam bulan (1–5)
-     * Minggu 1 = tgl 1–7, Minggu 2 = tgl 8–14, dst.
+     * Menghitung minggu ke-berapa dalam bulan (selalu 1–4)
+     * Minggu 1 = tgl 1–7
+     * Minggu 2 = tgl 8–14
+     * Minggu 3 = tgl 15–21
+     * Minggu 4 = tgl 22–akhir bulan
+     * Reset ke Minggu 1 saat bulan berganti.
      */
     function getWeekOfMonth(date) {
-        return Math.ceil(date.getDate() / 7);
+        const day = date.getDate();
+        if (day <= 7)  return 1;
+        if (day <= 14) return 2;
+        if (day <= 21) return 3;
+        return 4; // tgl 22 s/d akhir bulan
     }
 
-    /** Rentang tanggal minggu ini (mis: "1 Apr – 7 Apr 2026") */
+    /** Rentang tanggal minggu ini (mis: "22 Apr – 30 Apr 2026") */
     function getWeekDateRange(date) {
         const week = getWeekOfMonth(date);
         const year = date.getFullYear();
         const month = date.getMonth();
-        const startDay = (week - 1) * 7 + 1;
-        const endDay = Math.min(week * 7, new Date(year, month + 1, 0).getDate());
-        return `${startDay} ${MONTHS_SHORT[month]} – ${endDay} ${MONTHS_SHORT[month]} ${year}`;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const weekRanges = [
+            { start: 1,  end: 7 },
+            { start: 8,  end: 14 },
+            { start: 15, end: 21 },
+            { start: 22, end: lastDay }
+        ];
+        const { start, end } = weekRanges[week - 1];
+        return `${start} ${MONTHS_SHORT[month]} \u2013 ${end} ${MONTHS_SHORT[month]} ${year}`;
     }
 
     /** Label periode: "Minggu 1 - Apr 2026" */

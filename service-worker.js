@@ -6,7 +6,7 @@
  *  - Google Apps Script API calls                 → Network First (no cache)
  */
 
-const CACHE_NAME = 'stockmonitor-v1.7';
+const CACHE_NAME = 'stockmonitor-v1.8';
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const STATIC_ASSETS = [
   '',

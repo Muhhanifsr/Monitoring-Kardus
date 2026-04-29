@@ -11,13 +11,13 @@
     <meta name="theme-color" content="#6366f1">
 
     <!-- PWA: Manifest -->
-    <link rel="manifest" href="/Monitoring-Kardus/manifest.json">
+    <link rel="manifest" href="manifest.json">
 
     <!-- PWA: iOS Safari installable -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="StockMonitor">
-    <link rel="apple-touch-icon" href="/Monitoring-Kardus/icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
     <!-- PWA: Android / General -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -25,15 +25,15 @@
 
     <!-- PWA: Microsoft -->
     <meta name="msapplication-TileColor" content="#6366f1">
-    <meta name="msapplication-TileImage" content="/Monitoring-Kardus/icons/icon-192.png">
+    <meta name="msapplication-TileImage" content="icons/icon-192.png">
 
     <title>Stock Monitoring Carton &amp; Pallet</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/Monitoring-Kardus/icons/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/Monitoring-Kardus/icons/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/Monitoring-Kardus/icons/icon-512.png">
-    <link rel="shortcut icon" href="/Monitoring-Kardus/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="shortcut icon" href="icons/favicon-32.png">
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/custom.css">
@@ -682,9 +682,9 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', async () => {
                 try {
-                    await navigator.serviceWorker.register('/Monitoring-Kardus/service-worker.js', {
-                        scope: '/Monitoring-Kardus/'
-                    });
+                    const basePath = window.location.pathname.replace(/[^/]*$/, '');
+                    const swUrl = `${basePath}service-worker.js`;
+                    await navigator.serviceWorker.register(swUrl, { scope: basePath });
                 } catch (error) {
                     console.error('[PWA] Service Worker registration failed:', error);
                 }

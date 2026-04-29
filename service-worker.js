@@ -6,22 +6,23 @@
  *  - Google Apps Script API calls                 → Network First (no cache)
  */
 
-const CACHE_NAME    = 'stockmonitor-v1.4';
+const CACHE_NAME = 'stockmonitor-v1.5';
+const BASE_PATH = new URL(self.registration.scope).pathname;
 const STATIC_ASSETS = [
-  '/Monitoring-Kardus/',
-  '/Monitoring-Kardus/index.html',
-  '/Monitoring-Kardus/manifest.json',
-  '/Monitoring-Kardus/css/bootstrap.min.css',
-  '/Monitoring-Kardus/css/custom.css',
-  '/Monitoring-Kardus/js/bootstrap.bundle.min.js',
-  '/Monitoring-Kardus/js/app.js',
-  '/Monitoring-Kardus/icons/icon-192.png',
-  '/Monitoring-Kardus/icons/icon-512.png',
-  '/Monitoring-Kardus/icons/apple-touch-icon.png',
-  '/Monitoring-Kardus/icons/favicon-32.png',
-  '/Monitoring-Kardus/PT.-Inti-Pantja-Press-Industri.webp',
-  '/Monitoring-Kardus/thumb_ippi-removebg-preview.png',
-];
+  '',
+  'index.html',
+  'manifest.json',
+  'css/bootstrap.min.css',
+  'css/custom.css',
+  'js/bootstrap.bundle.min.js',
+  'js/app.js',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/apple-touch-icon.png',
+  'icons/favicon-32.png',
+  'PT.-Inti-Pantja-Press-Industri.webp',
+  'thumb_ippi-removebg-preview.png',
+].map((path) => `${BASE_PATH}${path}`);
 
 const CDN_HOSTS = [
   'fonts.googleapis.com',
@@ -109,7 +110,7 @@ async function cacheFirst(request) {
   } catch {
     // Offline fallback: serve index.html for navigation requests
     if (request.mode === 'navigate') {
-      return caches.match('/Monitoring-Kardus/index.html');
+      return caches.match(`${BASE_PATH}index.html`);
     }
     return new Response('Offline – resource not available', { status: 503 });
   }
@@ -124,7 +125,7 @@ async function networkFirst(request) {
     const cached = await caches.match(request);
     if (cached) return cached;
     if (request.mode === 'navigate') {
-      return caches.match('/Monitoring-Kardus/index.html');
+      return caches.match(`${BASE_PATH}index.html`);
     }
     return new Response('Offline', { status: 503 });
   }

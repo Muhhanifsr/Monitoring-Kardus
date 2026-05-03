@@ -6,7 +6,7 @@
  *  - Google Apps Script API calls                 → Network First (no cache)
  */
 
-const CACHE_NAME = 'stockmonitor-v1.8';
+const CACHE_NAME = 'stockmonitor-v1.9';
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const STATIC_ASSETS = [
   '',
@@ -20,6 +20,16 @@ const STATIC_ASSETS = [
   'icons/icon-512.png?v=20260429',
   'icons/apple-touch-icon.png?v=20260429',
   'icons/favicon-32.png?v=20260429',
+  'icons/splash-640x1136.png',
+  'icons/splash-750x1334.png',
+  'icons/splash-1242x2208.png',
+  'icons/splash-1125x2436.png',
+  'icons/splash-828x1792.png',
+  'icons/splash-1242x2688.png',
+  'icons/splash-1170x2532.png',
+  'icons/splash-1284x2778.png',
+  'icons/splash-1179x2556.png',
+  'icons/splash-1290x2796.png',
   'PT.-Inti-Pantja-Press-Industri.webp',
   'thumb_ippi-removebg-preview.png',
 ].map((path) => `${BASE_PATH}${path}`);

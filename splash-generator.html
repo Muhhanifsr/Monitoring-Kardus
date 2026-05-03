@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PWA Splash Screen Generator — StockMonitor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 1.5rem;
+  }
+  h1 { font-size: 1.5rem; color: #a5b4fc; }
+  p  { font-size: 0.9rem; color: #94a3b8; text-align: center; max-width: 480px; }
+  button {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #status {
+    font-size: 0.875rem;
+    color: #86efac;
+    min-height: 1.5rem;
+    text-align: center;
+  }
+  #log {
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 480px;
+  }
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<h1>🎨 iOS PWA Splash Screen Generator</h1>
+<p>Tool ini akan membuat 10 splash screen untuk semua ukuran iPhone.<br>
+Klik tombol, tunggu selesai, lalu pindahkan file ke folder <code>icons/</code></p>
+
+<button id="btnGenerate" onclick="generate()">⚡ Generate & Download Semua</button>
+<div id="status">Siap generate...</div>
+<div id="log"></div>
+<canvas id="c"></canvas>
+
+<script>
+const SPLASHES = [
+  { name: 'splash-640x1136.png',   w: 640,  h: 1136 },
+  { name: 'splash-750x1334.png',   w: 750,  h: 1334 },
+  { name: 'splash-1242x2208.png',  w: 1242, h: 2208 },
+  { name: 'splash-1125x2436.png',  w: 1125, h: 2436 },
+  { name: 'splash-828x1792.png',   w: 828,  h: 1792 },
+  { name: 'splash-1242x2688.png',  w: 1242, h: 2688 },
+  { name: 'splash-1170x2532.png',  w: 1170, h: 2532 },
+  { name: 'splash-1284x2778.png',  w: 1284, h: 2778 },
+  { name: 'splash-1179x2556.png',  w: 1179, h: 2556 },
+  { name: 'splash-1290x2796.png',  w: 1290, h: 2796 },
+];
+
+const BG = '#0a0e1a';
+const ICON_URL = 'icons/icon-512.png';
+
+function log(msg) {
+  const div = document.getElementById('log');
+  const el = document.createElement('div');
+  el.textContent = msg;
+  div.appendChild(el);
+  div.scrollTop = div.scrollHeight;
+}
+
+async function generate() {
+  const btn = document.getElementById('btnGenerate');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = '⏳ Memuat icon...';
+
+  const icon = new Image();
+  icon.crossOrigin = 'anonymous';
+  icon.src = ICON_URL;
+
+  await new Promise((res, rej) => {
+    icon.onload = res;
+    icon.onerror = () => rej(new Error('Gagal memuat icons/icon-512.png'));
+  });
+
+  const canvas = document.getElementById('c');
+  status.textContent = '🖼️ Membuat splash screens...';
+
+  for (let i = 0; i < SPLASHES.length; i++) {
+    const { name, w, h } = SPLASHES[i];
+    canvas.width  = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, w, h);
+
+    const iconSize = Math.round(Math.min(w, h) * 0.28);
+    const x = (w - iconSize) / 2;
+    const y = (h - iconSize) / 2;
+    ctx.drawImage(icon, x, y, iconSize, iconSize);
+
+    // Trigger download
+    const a = document.createElement('a');
+    a.download = name;
+    a.href = canvas.toDataURL('image/png');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    log(`✅ ${name} (${w}x${h})`);
+    status.textContent = `[${i + 1}/${SPLASHES.length}] ${name}`;
+
+    // Small delay to prevent browser blocking multiple downloads
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  status.textContent = '✨ Semua splash screen berhasil diunduh! Pindahkan ke folder icons/';
+  btn.textContent = '✅ Selesai!';
+}
+</script>
+</body>
+</html>
